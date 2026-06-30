@@ -1,7 +1,8 @@
-﻿# ONEA Energy Optimizer — Station de Paspanga
+# ONEA Energy Optimizer — Station de Paspanga
 
 Projet Flask de gestion énergétique pour la station de pompage Paspanga.
 Ce projet combine prévision, optimisation MPC, détection d'anomalies et simulation temps réel.
+![Vue d'ensemble](<assets/vue d'ensemble.png>)
 
 ## Fonctionnalités principales
 
@@ -36,7 +37,7 @@ Ce projet combine prévision, optimisation MPC, détection d'anomalies et simula
 
 ```bash
 git clone <url-du-depot>
-cd "PROJET ONEA ENERGY OPTIMIZER - Sobre"
+cd "ONEA ENERGY OPTIMIZER"
 ```
 
 2. Créer un environnement virtuel.
@@ -91,6 +92,8 @@ PROJET ONEA ENERGY OPTIMIZER - Sobre/
 - Utilise un Random Forest pour la consommation et la production solaire.
 - Intègre le calendrier du Burkina Faso (`holidays`) et le Ramadan (`hijridate`).
 - Génère `data/predictions.json` et `data/module2_interface.json`.
+![Prédiction énergétique](assets/Predictions.png)
+
 
 ### Module 2 — Optimisation MPC du pompage
 
@@ -98,12 +101,16 @@ PROJET ONEA ENERGY OPTIMIZER - Sobre/
 - Reconstruit les caractéristiques des pompes et les contraintes hydrauliques.
 - Résout un problème MILP avec `pulp`.
 - Génère `data/pump_schedule.json` et `data/mpc_metrics.json`.
+![Optimisation MPC](assets/Optimisation.png)
+
 
 ### Module 3 — Détection d'anomalies
 
 - Combine des règles métiers et un modèle `IsolationForest`.
 - Analyse les données issues des modules 1 et 2.
 - Génère `data/anomalies.json`.
+![Détection d’anomalies](assets/Anomalies.png)
+
 
 ### Module 4 — Simulateur temps réel
 
