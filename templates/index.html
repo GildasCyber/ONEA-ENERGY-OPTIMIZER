@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ONEA — Station Paspanga · Tableau de bord</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ═══════════ HEADER ═══════════ -->
+<header class="header">
+  <div class="header-brand">
+    <div class="brand-logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+    </div>
+    <div class="brand-text">
+      <span class="brand-name">ONEA ENERGY OPTIMIZER</span>
+      <span class="brand-sub"> Système Intelligent de Gestion Énergétique</span>
+    </div>
+  </div>
+
+  <div class="header-station">
+    <div class="station-badge">
+      <span class="station-dot"></span>
+      <span class="station-label">Station de Paspanga</span>
+    </div>
+    <div class="station-meta">
+      <span>3×90kW + 1×132kW</span>
+      <span class="sep">·</span>
+      <span>400 m³/h</span>
+      <span class="sep">·</span>
+      <span>8 000 m³ stockage</span>
+    </div>
+  </div>
+
+  <div class="header-right">
+    <div class="header-clock">
+      <div id="clock" class="clock-val">--:--:--</div>
+      <div id="hdate" class="clock-date">---</div>
+    </div>
+    <button class="btn-primary" id="btn-regen">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      Recalculer
+    </button>
+  </div>
+</header>
+
+<!-- ═══════════ TABS ═══════════ -->
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="overview">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    Vue d'ensemble
+  </button>
+  <button class="tab-btn" data-tab="prediction">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    Prédiction
+  </button>
+  <button class="tab-btn" data-tab="optimisation">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+    Optimisation
+  </button>
+  <button class="tab-btn" data-tab="anomalies">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    Anomalies
+  </button>
+  <button class="tab-btn" data-tab="ranking">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    Classement
+  </button>
+  <div class="tab-last-update">Mise à jour : <span id="last-update">--</span></div>
+  <div class="mpc-status-wrap"><span id="mpc-status-dot" class="mpc-status-dot idle"></span><span id="mpc-status-txt" class="mpc-status-txt">MPC en attente</span></div>
+</nav>
+
+<!-- ═══════════════════════════════════════════
+     ONGLET 1 — VUE D'ENSEMBLE
+════════════════════════════════════════════ -->
+<div class="tab-content active" id="tab-overview">
+
+  <!-- Ligne KPI -->
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+      <div class="kpi-body">
+        <div class="kpi-label">Coût optimisé 24h</div>
+        <div class="kpi-value" id="k-cout">-- FCFA</div>
+        <div class="kpi-sub green" id="k-eco">Économie : --</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg></div>
+      <div class="kpi-body">
+        <div class="kpi-label">Énergie solaire</div>
+        <div class="kpi-value" id="k-solar">-- kWh</div>
+        <div class="kpi-sub" id="k-solar-pct">-- % du mix</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+      <div class="kpi-body">
+        <div class="kpi-label">Gasoil consommé</div>
+        <div class="kpi-value" id="k-gasoil">-- L</div>
+        <div class="kpi-sub" id="k-co2">CO₂ : -- kg</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>
+      <div class="kpi-body">
+        <div class="kpi-label">Régime actuel</div>
+        <div class="kpi-value" id="k-regime">--</div>
+        <div class="kpi-sub" id="k-source">Source : --</div>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+      <div class="kpi-body">
+        <div class="kpi-label">Châteaux (niveau moy.)</div>
+        <div class="kpi-value" id="k-ch-moy">-- %</div>
+        <div class="kpi-sub" id="k-bache">Bâches : -- %</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ligne principale -->
+  <div class="main-row">
+
+    <!-- Châteaux -->
+    <div class="card card-chateaux">
+      <div class="card-header">
+        <h3>Châteaux d'eau — Remplissage en série</h3>
+        <span class="badge-info">C1 → C2 → C3 → C4 · 4×2 000 m³</span>
+      </div>
+      <div class="chateaux-container">
+        <div class="ch-wrapper" id="ch-0">
+          <div class="ch-tank"><div class="ch-fill" id="cf-0"></div><span class="ch-pct" id="cp-0">--%</span></div>
+          <div class="ch-arrow active" id="ca-0">→</div>
+          <div class="ch-name">C1</div><div class="ch-vol" id="cv-0">-- m³</div>
+        </div>
+        <div class="ch-wrapper" id="ch-1">
+          <div class="ch-tank"><div class="ch-fill" id="cf-1"></div><span class="ch-pct" id="cp-1">--%</span></div>
+          <div class="ch-arrow" id="ca-1">→</div>
+          <div class="ch-name">C2</div><div class="ch-vol" id="cv-1">-- m³</div>
+        </div>
+        <div class="ch-wrapper" id="ch-2">
+          <div class="ch-tank"><div class="ch-fill" id="cf-2"></div><span class="ch-pct" id="cp-2">--%</span></div>
+          <div class="ch-arrow" id="ca-2">→</div>
+          <div class="ch-name">C3</div><div class="ch-vol" id="cv-2">-- m³</div>
+        </div>
+        <div class="ch-wrapper" id="ch-3">
+          <div class="ch-tank"><div class="ch-fill" id="cf-3"></div><span class="ch-pct" id="cp-3">--%</span></div>
+          <div class="ch-arrow" style="visibility:hidden">→</div>
+          <div class="ch-name">C4</div><div class="ch-vol" id="cv-3">-- m³</div>
+        </div>
+      </div>
+      <!-- Bâches -->
+      <div class="baches-bar">
+        <div class="bache-label">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16M4 2h16M4 12h16M4 7h16M4 17h16"/></svg>
+          Bâches source (3×2 000 m³)
+        </div>
+        <div class="bache-progress-wrap">
+          <div class="bache-progress"><div class="bache-fill" id="bache-fill-bar"></div></div>
+          <span class="bache-pct-label" id="bache-pct-txt">--%</span>
+        </div>
+        <div class="bache-stats">
+          <span>Min 24h : <b id="b-min">--%</b></span>
+          <span>Max 24h : <b id="b-max">--%</b></span>
+          <span>Volume : <b id="b-vol">-- m³</b></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mix + Pompes -->
+    <div class="side-col">
+      <!-- Mix énergétique -->
+      <div class="card">
+        <div class="card-header"><h3>Mix énergétique 24h</h3></div>
+        <div class="mix-layout">
+          <div class="mix-donut-wrap">
+            <canvas id="chart-mix" width="130" height="130"></canvas>
+            <div class="donut-center"><span id="mix-total-val">--</span><small>kWh</small></div>
+          </div>
+          <div class="mix-legend">
+            <div class="mix-row"><span class="dot solar"></span><span class="ml-name">Solaire</span><span class="ml-kwh" id="mx-sol">--</span><span class="ml-pct" id="mx-sol-p">--%</span></div>
+            <div class="mix-row"><span class="dot sonabel"></span><span class="ml-name">SONABEL</span><span class="ml-kwh" id="mx-son">--</span><span class="ml-pct" id="mx-son-p">--%</span></div>
+            <div class="mix-row"><span class="dot ge"></span><span class="ml-name">Groupe élec.</span><span class="ml-kwh" id="mx-ge">--</span><span class="ml-pct" id="mx-ge-p">--%</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pompes -->
+      <div class="card">
+        <div class="card-header"><h3>État pompes</h3></div>
+        <div class="pumps-grid">
+          <div class="pump-cell" id="pm-1"><div class="pump-ico" id="pi-1"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="20" cy="20" r="14"/><path d="M20 8v5M20 27v5M8 20h5M27 20h5"/><circle cx="20" cy="20" r="4" fill="currentColor"/></svg></div><div class="pump-info"><span class="pn">P1</span><span class="ps">90 kW</span></div></div>
+          <div class="pump-cell" id="pm-2"><div class="pump-ico" id="pi-2"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="20" cy="20" r="14"/><path d="M20 8v5M20 27v5M8 20h5M27 20h5"/><circle cx="20" cy="20" r="4" fill="currentColor"/></svg></div><div class="pump-info"><span class="pn">P2</span><span class="ps">90 kW</span></div></div>
+          <div class="pump-cell" id="pm-3"><div class="pump-ico" id="pi-3"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="20" cy="20" r="14"/><path d="M20 8v5M20 27v5M8 20h5M27 20h5"/><circle cx="20" cy="20" r="4" fill="currentColor"/></svg></div><div class="pump-info"><span class="pn">P3</span><span class="ps">90 kW</span></div></div>
+          <div class="pump-cell" id="pm-4"><div class="pump-ico" id="pi-4"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="20" cy="20" r="14"/><path d="M20 8v5M20 27v5M8 20h5M27 20h5"/><circle cx="20" cy="20" r="4" fill="currentColor"/></svg></div><div class="pump-info"><span class="pn">P4</span><span class="ps">132 kW</span></div></div>
+        </div>
+        <div class="pump-summary">
+          <div class="ps-row"><span>Configuration</span><strong id="ps-label">--</strong></div>
+          <div class="ps-row"><span>Puissance</span><strong id="ps-power">-- kW</strong></div>
+          <div class="ps-row"><span>Débit</span><strong id="ps-flow">-- m³/h</strong></div>
+          <div class="ps-row"><span>Source</span><strong id="ps-src">--</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ligne graphiques -->
+  <div class="charts-row">
+    <div class="card">
+      <div class="card-header"><h3>Planning pompes 24h (96 créneaux × 15 min)</h3></div>
+      <div class="chart-wrap"><canvas id="chart-schedule"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3>Évolution niveaux réservoirs</h3></div>
+      <div class="chart-wrap"><canvas id="chart-levels"></canvas></div>
+    </div>
+  </div>
+
+</div><!-- /tab-overview -->
+
+
+<!-- ═══════════════════════════════════════════
+     ONGLET 2 — PRÉDICTION
+════════════════════════════════════════════ -->
+<div class="tab-content" id="tab-prediction">
+  <div class="charts-row">
+    <div class="card">
+      <div class="card-header"><h3>Consommation eau prédite (m³/h)</h3></div>
+      <div class="chart-wrap"><canvas id="chart-pred-flow"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3>Disponibilité solaire prédite</h3></div>
+      <div class="chart-wrap-tall"><canvas id="chart-pred-solar"></canvas></div>
+    </div>
+  </div>
+  <div class="charts-row">
+    <div class="card flex-2">
+      <div class="card-header"><h3>Prédiction consommation énergétique 24h</h3></div>
+      <div class="chart-wrap-tall"><canvas id="chart-pred-energy"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3>Tarifs SONABEL 24h</h3></div>
+      <div class="chart-wrap"><canvas id="chart-pred-tarif"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3>Disponibilité réseau prédite</h3></div>
+      <div class="chart-wrap"><canvas id="chart-pred-grid"></canvas></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><h3>Tableau prédictions détaillées</h3></div>
+    <div class="table-wrap">
+      <table class="data-table" id="table-pred">
+        <thead><tr><th>Heure</th><th>Énergie prédite (kW)</th><th>Débit conso (m³/h)</th><th>Solaire (kW)</th><th>Tarif (FCFA/kWh)</th><th>Réseau</th><th>Source</th></tr></thead>
+        <tbody id="tbody-pred"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     ONGLET 3 — OPTIMISATION
+════════════════════════════════════════════ -->
+<div class="tab-content" id="tab-optimisation">
+
+  
+  <!-- Priorités -->
+  <div class="priorities-banner">
+    <div class="prio-item p1"><span class="prio-num">P1</span><span>Disponibilité eau garantie</span></div>
+    <div class="prio-sep">›</div>
+    <div class="prio-item p2"><span class="prio-num">P2</span><span>Évitement groupe électrogène</span></div>
+    <div class="prio-sep">›</div>
+    <div class="prio-item p3"><span class="prio-num">P3</span><span>Minimisation heures de pointe</span></div>
+  </div>
+
+  <div class="charts-row">
+    <div class="card flex-2">
+      <div class="card-header"><h3>Planning optimisé — Pompes & Sources</h3></div>
+      <div class="chart-wrap-tall"><canvas id="chart-opt-schedule"></canvas></div>
+    </div>
+  </div>
+
+  <div class="charts-row">
+    <div class="card">
+      <div class="card-header"><h3>Niveaux châteaux — Évolution 24h</h3></div>
+      <div class="chart-wrap"><canvas id="chart-opt-chateaux"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3>Niveaux bâches source — Évolution 24h</h3></div>
+      <div class="chart-wrap"><canvas id="chart-opt-baches"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Table planning -->
+  <div class="card">
+    <div class="card-header">
+      <h3>Planning détaillé 96 créneaux</h3>
+      <div class="table-legend">
+        <span class="tl-item solar">■ Solaire</span>
+        <span class="tl-item sonabel">■ SONABEL</span>
+        <span class="tl-item ge">■ GE</span>
+        <span class="tl-item pointe">■ Heure de pointe</span>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table" id="table-opt">
+        <thead><tr><th>Créneau</th><th>Heure</th><th>Pompes</th><th>Puissance</th><th>Débit</th><th>Source</th><th>Solaire</th><th>SONABEL</th><th>GE</th><th>Coût</th><th>Bâche</th><th>Château moy.</th></tr></thead>
+        <tbody id="tbody-opt"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     ONGLET 4 — ANOMALIES
+════════════════════════════════════════════ -->
+<div class="tab-content" id="tab-anomalies">
+
+  <!-- KPI row anomalies -->
+  <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
+    <div class="kpi-card">
+      <div class="kpi-label">Anomalies détectées</div>
+      <div class="kpi-value" id="an-total">--</div>
+      <div class="kpi-sub" id="an-periode">--</div>
+    </div>
+    <div class="kpi-card kpi-danger">
+      <div class="kpi-label">Critiques</div>
+      <div class="kpi-value" id="an-crit">--</div>
+      <div class="kpi-sub">score ≥ 6</div>
+    </div>
+    <div class="kpi-card kpi-warn">
+      <div class="kpi-label">Moyennes</div>
+      <div class="kpi-value" id="an-moy">--</div>
+      <div class="kpi-sub">score 3–5</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Faibles</div>
+      <div class="kpi-value" id="an-faib">--</div>
+      <div class="kpi-sub">score 1–2</div>
+    </div>
+  </div>
+
+
+  <!-- Filtre -->
+  <div class="table-toolbar" style="margin-bottom:10px;display:flex;gap:10px;align-items:center">
+    <span style="font-size:12px;color:var(--gray-400);font-weight:500">Filtre sévérité :</span>
+    <button class="an-filter-btn active" data-sev="ALL">Toutes</button>
+    <button class="an-filter-btn" data-sev="CRITIQUE">Critiques</button>
+    <button class="an-filter-btn" data-sev="MOYENNE">Moyennes</button>
+    <button class="an-filter-btn" data-sev="FAIBLE">Faibles</button>
+    <span style="margin-left:auto;font-size:11px;color:var(--gray-400)" id="an-filter-count"></span>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Heure</th>
+          <th>Sévérité</th>
+          <th>Score</th>
+          <th>Alertes</th>
+          <th>Méthode</th>
+          <th>Débit est. m³/h</th>
+          <th>Débit pompe m³/h</th>
+          <th>Bâche %</th>
+          <th>Château %</th>
+          <th>Source</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-anomalies"></tbody>
+    </table>
+  </div>
+  <div id="anomaly-data-preview"></div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     ONGLET 5 — RANKING
+════════════════════════════════════════════ -->
+<div class="tab-content" id="tab-ranking">
+  <div class="coming-soon-card">
+    <div class="cs-icon">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    </div>
+    <h2>Classement des stations</h2>
+    <p>Ce module permettra de comparer et classer toutes les stations ONEA selon leurs performances énergétiques, économiques et hydrauliques.</p>
+    <div class="cs-features">
+      <div class="cs-feat"><div class="cs-feat-dot"></div>Score performance énergétique</div>
+      <div class="cs-feat"><div class="cs-feat-dot"></div>Classement coût/m³ produit</div>
+      <div class="cs-feat"><div class="cs-feat-dot"></div>Taux utilisation solaire</div>
+      <div class="cs-feat"><div class="cs-feat-dot"></div>Indice fiabilité hydraulique</div>
+    </div>
+    <div class="module-status"><span class="status-badge pending">Module en développement</span></div>
+    <div id="ranking-data-preview"></div>
+  </div>
+</div>
+
+<!-- ═══════════ FOOTER ═══════════ -->
+<footer class="footer">
+  <span>© ONEA — Office National de l'Eau et de l'Assainissement · Burkina Faso</span>
+  <span>Station Paspanga · MPC Optimizer v2.0 · Algorithme Programmation Dynamique</span>
+</footer>
+
+<script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+</body>
+</html>

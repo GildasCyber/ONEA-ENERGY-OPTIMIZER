@@ -1,0 +1,9 @@
+apscheduler
+flask
+holidays
+hijridate
+joblib
+numpy
+pandas
+pulp
+scikit-learn
